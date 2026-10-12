@@ -1,0 +1,475 @@
+/* =========================================================
+   Tema NFL para o Swagger UI
+   Cores: azul-marinho e vermelho da liga, prata e verde de campo
+   ========================================================= */
+:root {
+  --nfl-navy: #013369;
+  --nfl-navy-dark: #00214a;
+  --nfl-red: #d50a0a;
+  --nfl-red-dark: #a80808;
+  --nfl-silver: #a5acaf;
+  --nfl-field: #1f6b33;
+  --nfl-field-light: #2b8a45;
+  --nfl-gold: #c99700;
+  --nfl-bg: #f3f5f9;
+  --nfl-ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+body {
+  background: var(--nfl-bg);
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+}
+
+/* ---------- Cabeçalho ---------- */
+.nfl-header {
+  background: linear-gradient(120deg, var(--nfl-navy-dark) 0%, var(--nfl-navy) 60%, #0a4a8f 100%);
+  color: #fff;
+  border-bottom: 4px solid var(--nfl-red);
+  box-shadow: 0 4px 18px rgba(0, 33, 74, .35);
+}
+
+.nfl-header__inner {
+  max-width: 1460px;
+  margin: 0 auto;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.nfl-header__logo {
+  width: 56px;
+  height: 63px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .35));
+  transition: transform .35s var(--nfl-ease);
+}
+
+.nfl-header__logo:hover {
+  transform: rotate(-6deg) scale(1.08);
+}
+
+.nfl-header__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nfl-header__title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.nfl-header__title span {
+  color: var(--nfl-red);
+  text-shadow: 0 0 1px #fff;
+}
+
+.nfl-header__subtitle {
+  font-size: 14px;
+  color: #d6dde8;
+}
+
+.nfl-header__links {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nfl-header__links a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border: 2px solid rgba(255, 255, 255, .35);
+  border-radius: 999px;
+  transition: background-color .25s var(--nfl-ease), border-color .25s var(--nfl-ease), transform .2s var(--nfl-ease);
+}
+
+.nfl-header__links a:hover {
+  background: var(--nfl-red);
+  border-color: var(--nfl-red);
+  transform: translateY(-2px);
+}
+
+/* Faixa de gramado com linhas de jarda */
+.nfl-yardlines {
+  height: 12px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 58px, rgba(255, 255, 255, .85) 58px 60px),
+    linear-gradient(180deg, var(--nfl-field-light), var(--nfl-field));
+}
+
+/* ---------- Barra superior do Swagger (seletor de versão) ---------- */
+.swagger-ui .topbar {
+  background: var(--nfl-navy-dark);
+  padding: 8px 0;
+}
+
+.swagger-ui .topbar .topbar-wrapper .link {
+  display: none; /* o logo do Swagger é substituído pelo cabeçalho NFL */
+}
+
+.swagger-ui .topbar .download-url-wrapper .select-label {
+  color: #fff;
+  font-weight: 600;
+}
+
+.swagger-ui .topbar .download-url-wrapper select {
+  border: 2px solid var(--nfl-red);
+  border-radius: 6px;
+  transition: box-shadow .2s var(--nfl-ease);
+}
+
+.swagger-ui .topbar .download-url-wrapper select:hover,
+.swagger-ui .topbar .download-url-wrapper select:focus {
+  box-shadow: 0 0 0 3px rgba(213, 10, 10, .35);
+}
+
+/* ---------- Bloco de informações ---------- */
+.swagger-ui .info .title {
+  color: var(--nfl-navy);
+  font-weight: 800;
+}
+
+.swagger-ui .info .title small {
+  background: var(--nfl-red);
+}
+
+.swagger-ui .info .title small.version-stamp {
+  background: var(--nfl-field);
+}
+
+.swagger-ui .info a,
+.swagger-ui .info h3 {
+  color: var(--nfl-navy);
+}
+
+.swagger-ui .info table th {
+  color: var(--nfl-navy);
+}
+
+.swagger-ui .scheme-container {
+  border-top: 3px solid var(--nfl-navy);
+  box-shadow: 0 2px 10px rgba(1, 51, 105, .12);
+}
+
+/* ---------- Grupos (tags) ---------- */
+.swagger-ui .opblock-tag {
+  color: var(--nfl-navy);
+  border-bottom: 2px solid rgba(1, 51, 105, .15);
+  transition: color .2s var(--nfl-ease), border-color .2s var(--nfl-ease), padding-left .25s var(--nfl-ease);
+}
+
+.swagger-ui .opblock-tag:hover {
+  color: var(--nfl-red);
+  border-bottom-color: var(--nfl-red);
+  padding-left: 8px;
+}
+
+/* ---------- Operações por método HTTP ---------- */
+.swagger-ui .opblock {
+  border-radius: 8px;
+  transition: box-shadow .25s var(--nfl-ease), transform .25s var(--nfl-ease);
+}
+
+.swagger-ui .opblock:hover {
+  box-shadow: 0 6px 16px rgba(1, 51, 105, .18);
+  transform: translateX(3px);
+}
+
+.swagger-ui .opblock .opblock-summary-method {
+  border-radius: 5px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  transition: transform .2s var(--nfl-ease);
+}
+
+.swagger-ui .opblock:hover .opblock-summary-method {
+  transform: scale(1.06);
+}
+
+/* Cores por método (redefinidas no modo escuro, mais abaixo) */
+:root {
+  --m-get: var(--nfl-navy);       --m-get-bg: rgba(1, 51, 105, .06);
+  --m-post: var(--nfl-field);     --m-post-bg: rgba(31, 107, 51, .07);
+  --m-put: var(--nfl-gold);       --m-put-bg: rgba(201, 151, 0, .08);
+  --m-patch: #5b6b7a;             --m-patch-bg: rgba(165, 172, 175, .14);
+  --m-delete: var(--nfl-red);     --m-delete-bg: rgba(213, 10, 10, .06);
+}
+
+.swagger-ui .opblock.opblock-get, html.dark-mode .swagger-ui .opblock.opblock-get { border-color: var(--m-get); background: var(--m-get-bg); }
+.swagger-ui .opblock.opblock-get .opblock-summary, html.dark-mode .swagger-ui .opblock.opblock-get .opblock-summary { border-color: var(--m-get); }
+.swagger-ui .opblock.opblock-get .opblock-summary-method, html.dark-mode .swagger-ui .opblock.opblock-get .opblock-summary-method { background: var(--m-get); color: #fff; }
+
+.swagger-ui .opblock.opblock-post, html.dark-mode .swagger-ui .opblock.opblock-post { border-color: var(--m-post); background: var(--m-post-bg); }
+.swagger-ui .opblock.opblock-post .opblock-summary, html.dark-mode .swagger-ui .opblock.opblock-post .opblock-summary { border-color: var(--m-post); }
+.swagger-ui .opblock.opblock-post .opblock-summary-method, html.dark-mode .swagger-ui .opblock.opblock-post .opblock-summary-method { background: var(--m-post); color: #fff; }
+
+.swagger-ui .opblock.opblock-put, html.dark-mode .swagger-ui .opblock.opblock-put { border-color: var(--m-put); background: var(--m-put-bg); }
+.swagger-ui .opblock.opblock-put .opblock-summary, html.dark-mode .swagger-ui .opblock.opblock-put .opblock-summary { border-color: var(--m-put); }
+.swagger-ui .opblock.opblock-put .opblock-summary-method, html.dark-mode .swagger-ui .opblock.opblock-put .opblock-summary-method { background: var(--m-put); color: #fff; }
+
+.swagger-ui .opblock.opblock-patch, html.dark-mode .swagger-ui .opblock.opblock-patch { border-color: var(--m-patch); background: var(--m-patch-bg); }
+.swagger-ui .opblock.opblock-patch .opblock-summary, html.dark-mode .swagger-ui .opblock.opblock-patch .opblock-summary { border-color: var(--m-patch); }
+.swagger-ui .opblock.opblock-patch .opblock-summary-method, html.dark-mode .swagger-ui .opblock.opblock-patch .opblock-summary-method { background: var(--m-patch); color: #fff; }
+
+.swagger-ui .opblock.opblock-delete, html.dark-mode .swagger-ui .opblock.opblock-delete { border-color: var(--m-delete); background: var(--m-delete-bg); }
+.swagger-ui .opblock.opblock-delete .opblock-summary, html.dark-mode .swagger-ui .opblock.opblock-delete .opblock-summary { border-color: var(--m-delete); }
+.swagger-ui .opblock.opblock-delete .opblock-summary-method, html.dark-mode .swagger-ui .opblock.opblock-delete .opblock-summary-method { background: var(--m-delete); color: #fff; }
+
+/* ---------- Botões ---------- */
+.swagger-ui .btn {
+  border-radius: 6px;
+  font-weight: 700;
+  transition:
+    background-color .25s var(--nfl-ease),
+    color .25s var(--nfl-ease),
+    border-color .25s var(--nfl-ease),
+    box-shadow .25s var(--nfl-ease),
+    transform .15s var(--nfl-ease);
+}
+
+.swagger-ui .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(1, 51, 105, .25);
+}
+
+.swagger-ui .btn:active {
+  transform: translateY(0) scale(.97);
+  box-shadow: none;
+}
+
+.swagger-ui .btn:focus-visible,
+.swagger-ui select:focus-visible,
+.swagger-ui input:focus-visible {
+  outline: 3px solid rgba(213, 10, 10, .55);
+  outline-offset: 2px;
+}
+
+/* Authorize */
+.swagger-ui .btn.authorize {
+  color: var(--nfl-navy);
+  border-color: var(--nfl-navy);
+  background: #fff;
+}
+
+.swagger-ui .btn.authorize svg {
+  color: var(--nfl-navy);
+  fill: var(--nfl-navy);
+  transition: fill .25s var(--nfl-ease), color .25s var(--nfl-ease), transform .25s var(--nfl-ease);
+}
+
+.swagger-ui .btn.authorize:hover {
+  background: var(--nfl-navy);
+  color: #fff;
+}
+
+.swagger-ui .btn.authorize:hover svg,
+html.dark-mode .swagger-ui .scheme-container .btn.authorize:hover svg {
+  color: #fff;
+  fill: #fff;
+  transform: rotate(-12deg);
+}
+
+.swagger-ui .authorization__btn svg {
+  transition: fill .2s var(--nfl-ease), transform .2s var(--nfl-ease);
+}
+
+.swagger-ui .authorization__btn:hover svg {
+  transform: scale(1.15);
+}
+
+/* Try it out / Cancel */
+.swagger-ui .btn.try-out__btn {
+  color: var(--nfl-navy);
+  border-color: var(--nfl-navy);
+}
+
+.swagger-ui .btn.try-out__btn:hover {
+  background: var(--nfl-navy);
+  color: #fff;
+}
+
+.swagger-ui .btn.try-out__btn.cancel,
+.swagger-ui .btn.cancel {
+  color: var(--nfl-red);
+  border-color: var(--nfl-red);
+}
+
+.swagger-ui .btn.try-out__btn.cancel:hover,
+.swagger-ui .btn.cancel:hover {
+  background: var(--nfl-red);
+  color: #fff;
+}
+
+/* Execute */
+.swagger-ui .btn.execute {
+  background: var(--nfl-navy);
+  border-color: var(--nfl-navy);
+  color: #fff;
+}
+
+.swagger-ui .btn.execute:hover {
+  background: var(--nfl-red);
+  border-color: var(--nfl-red);
+  box-shadow: 0 6px 16px rgba(213, 10, 10, .35);
+}
+
+/* Clear */
+.swagger-ui .btn-clear:hover {
+  background: var(--nfl-silver);
+  color: #fff;
+}
+
+/* Modal de autorização */
+.swagger-ui .dialog-ux .modal-ux-header {
+  background: var(--nfl-navy);
+  border-bottom: 3px solid var(--nfl-red);
+}
+
+.swagger-ui .dialog-ux .modal-ux-header h3 {
+  color: #fff;
+}
+
+.swagger-ui .dialog-ux .modal-ux-header .close-modal svg {
+  fill: #fff;
+}
+
+.swagger-ui .dialog-ux .modal-ux-content .btn.modal-btn.auth.authorize {
+  background: var(--nfl-navy);
+  color: #fff;
+}
+
+.swagger-ui .dialog-ux .modal-ux-content .btn.modal-btn.auth.authorize:hover {
+  background: var(--nfl-field);
+  border-color: var(--nfl-field);
+}
+
+/* Códigos de resposta */
+.swagger-ui .response-col_status {
+  color: var(--nfl-navy);
+  font-weight: 700;
+}
+
+/* Setas e ícones de expandir */
+.swagger-ui .opblock-summary-control svg,
+.swagger-ui .expand-operation svg {
+  transition: transform .3s var(--nfl-ease);
+}
+
+.swagger-ui .opblock-summary-control:hover svg {
+  transform: scale(1.2);
+}
+
+/* ---------- Modo escuro do Swagger (botão de lâmpada) ---------- */
+html.dark-mode {
+  --m-get: #2f6fd0;     --m-get-bg: #12213a;
+  --m-post: #2b9a4f;    --m-post-bg: #10271a;
+  --m-put: #c99700;     --m-put-bg: #2a220c;
+  --m-patch: #7d8d9b;   --m-patch-bg: #1d2329;
+  --m-delete: #e52525;  --m-delete-bg: #2c1313;
+}
+
+html.dark-mode body {
+  background: #0b1626;
+}
+
+html.dark-mode .swagger-ui .topbar {
+  background: var(--nfl-navy-dark);
+}
+
+html.dark-mode .swagger-ui .info .title,
+html.dark-mode .swagger-ui .info a,
+html.dark-mode .swagger-ui .info h3,
+html.dark-mode .swagger-ui .info table th,
+html.dark-mode .swagger-ui .opblock-tag {
+  color: #e8edf5;
+}
+
+html.dark-mode .swagger-ui .opblock-tag {
+  border-bottom-color: rgba(232, 237, 245, .15);
+}
+
+html.dark-mode .swagger-ui .opblock-tag:hover {
+  color: #ff5a5a;
+  border-bottom-color: #ff5a5a;
+}
+
+html.dark-mode .swagger-ui .scheme-container {
+  border-top-color: var(--nfl-red);
+}
+
+html.dark-mode .swagger-ui .scheme-container .btn.authorize {
+  background: transparent;
+  color: #e8edf5;
+  border-color: #5d8fd8;
+}
+
+html.dark-mode .swagger-ui .scheme-container .btn.authorize svg {
+  color: #e8edf5;
+  fill: #e8edf5;
+}
+
+html.dark-mode .swagger-ui .scheme-container .btn.authorize:hover {
+  background: var(--nfl-navy);
+  border-color: var(--nfl-navy);
+}
+
+html.dark-mode .swagger-ui .opblock .opblock-section-header .try-out__btn {
+  color: #e8edf5;
+  border-color: #5d8fd8;
+}
+
+html.dark-mode .swagger-ui .opblock .opblock-section-header .try-out__btn:hover {
+  background: var(--nfl-navy);
+  border-color: var(--nfl-navy);
+}
+
+html.dark-mode .swagger-ui .opblock .opblock-section-header .try-out__btn.cancel {
+  color: #ff5f5f;
+  border-color: #ff5f5f;
+}
+
+html.dark-mode .swagger-ui .opblock .opblock-section-header .try-out__btn.cancel:hover {
+  background: var(--nfl-red);
+  border-color: var(--nfl-red);
+  color: #fff;
+}
+
+html.dark-mode .swagger-ui .dialog-ux .modal-ux .btn.modal-btn.auth.authorize {
+  background: var(--nfl-navy);
+  border-color: var(--nfl-navy);
+  color: #fff;
+}
+
+html.dark-mode .swagger-ui .opblock:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+}
+
+html.dark-mode .swagger-ui .response-col_status {
+  color: #e8edf5;
+}
+
+/* ---------- Acessibilidade: respeita quem prefere menos movimento ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .nfl-header *,
+  .swagger-ui * {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .nfl-header__title { font-size: 22px; }
+  .nfl-header__links { margin-left: 0; }
+}

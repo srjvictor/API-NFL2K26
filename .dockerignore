@@ -1,0 +1,9 @@
+target/
+*.log
+.git/
+.idea/
+.vscode/
+*.iml
+Dockerfile
+.dockerignore
+render.yaml
