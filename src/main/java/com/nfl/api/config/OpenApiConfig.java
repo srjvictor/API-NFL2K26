@@ -16,7 +16,7 @@ import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springdoc.core.customizers.GlobalOpenApiCustomizer;
-import org.springdoc.core.customizers.OperationCustomizer;
+import org.springdoc.core.customizers.GlobalOperationCustomizer;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -139,9 +139,10 @@ public class OpenApiConfig {
     /**
      * Acrescenta a todas as operações o header de idempotência (POST) e as respostas de erro
      * comuns geradas pelos filtros (400, 401, 403, 429, 500).
+     * Precisa ser Global*: um OperationCustomizer comum não é aplicado aos grupos v1/v2.
      */
     @Bean
-    public OperationCustomizer commonHeadersAndResponses() {
+    public GlobalOperationCustomizer commonHeadersAndResponses() {
         return (operation, handlerMethod) -> {
             boolean isPost = handlerMethod.hasMethodAnnotation(PostMapping.class);
             boolean isPublic = handlerMethod.hasMethodAnnotation(
