@@ -4,18 +4,11 @@ API RESTful sobre a NFL desenvolvida com **Spring Boot 4.1.1** e **Java 17**: ti
 
 ## 🚀 Demo online
 
-A API está publicada no Render:
-
 | Recurso | URL |
 |---|---|
 | Swagger UI | https://nfl-api-w1hc.onrender.com/swagger-ui.html |
 | Raiz HATEOAS | https://nfl-api-w1hc.onrender.com/api |
 | OpenAPI (JSON) | https://nfl-api-w1hc.onrender.com/v3/api-docs/v1 e `/v3/api-docs/v2` |
-
-Para testar, gere uma chave de leitura em `POST /api/keys/register` (endpoint público) e use-a no botão **Authorize**.
-
-> Plano gratuito: após um período sem acesso o serviço "adormece" e a primeira requisição pode levar ~50 s.
-> O banco é H2 em memória, então os dados voltam aos de exemplo a cada reinício.
 
 ## Como executar localmente
 
@@ -38,7 +31,7 @@ O banco é populado automaticamente com 5 times, 6 estádios, 10 jogadores, 5 pa
 
 ### Perfil `prod`
 
-Ative com `SPRING_PROFILES_ACTIVE=prod` (o Dockerfile já faz isso). Diferenças em relação ao desenvolvimento:
+Ative com `SPRING_PROFILES_ACTIVE=prod`. Diferenças em relação ao desenvolvimento:
 
 | Variável de ambiente | Obrigatória | Para quê |
 |---|---|---|
@@ -67,16 +60,6 @@ docker run -p 8080:8080 -e NFL_ADMIN_KEY=uma-chave-longa-e-secreta nfl-api
 ```
 
 A imagem é multi-stage (build com JDK 17, execução só com JRE 17) e roda com um usuário sem privilégios.
-
-### Deploy no Render (gratuito)
-
-1. Suba o projeto para o GitHub.
-2. No [Render](https://render.com): **New + → Blueprint** e selecione o repositório. O arquivo `render.yaml` cria o serviço
-   Docker e gera uma `NFL_ADMIN_KEY` aleatória (veja o valor em **Environment**).
-3. Ao terminar, acesse `https://<seu-servico>.onrender.com/swagger-ui.html`.
-
-No plano gratuito o serviço "dorme" após um período sem acesso (a primeira requisição demora ~1 min) e, como o banco é H2
-em memória, os dados voltam ao seed a cada reinício.
 
 ## Stack
 
