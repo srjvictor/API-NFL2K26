@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NFL · Consulta de times, jogadores e partidas</title>
-  <meta name="description" content="Pesquise times, jogadores, estádios, patrocinadores e partidas da NFL.">
+  <meta name="description" content="Pesquise e gerencie times, jogadores, estádios, patrocinadores e partidas da NFL.">
   <link rel="icon" type="image/svg+xml" href="/nfl/nfl-logo.svg">
   <link rel="stylesheet" href="/site/site.css">
 </head>
@@ -16,9 +16,12 @@
       <img class="logo" src="/nfl/nfl-logo.svg" alt="" width="52" height="58">
       <div class="brand">
         <h1>NFL <span>Consulta</span></h1>
-        <p>Pesquise times, jogadores, estádios, patrocinadores e partidas da liga</p>
+        <p>Pesquise e gerencie times, jogadores, estádios, patrocinadores e partidas da liga</p>
       </div>
-      <a class="docs" href="/swagger-ui.html">Documentação da API</a>
+      <div class="top-actions">
+        <button id="access-btn" type="button" class="access" aria-haspopup="dialog">Entrar para editar</button>
+        <a class="docs" href="/swagger-ui.html">Documentação da API</a>
+      </div>
     </div>
     <div class="yardlines" aria-hidden="true"></div>
   </header>
@@ -41,16 +44,74 @@
     <a href="/swagger-ui.html">Documentação (Swagger)</a>
   </footer>
 
-  <dialog id="detail" aria-labelledby="detail-title">
+  <!-- Detalhes -->
+  <dialog id="detail" class="closable" aria-labelledby="detail-title">
     <div class="dialog-head">
       <div>
         <h2 id="detail-title"></h2>
         <p id="detail-subtitle" class="sub"></p>
       </div>
-      <button id="detail-close" type="button" class="close" aria-label="Fechar">×</button>
+      <button type="button" class="close" data-close aria-label="Fechar">×</button>
     </div>
     <div id="detail-body"></div>
   </dialog>
+
+  <!-- Entrar com chave de editor/administrador -->
+  <dialog id="access-dialog" class="closable" aria-labelledby="access-title">
+    <div class="dialog-head">
+      <div>
+        <h2 id="access-title">Modo edição</h2>
+        <p id="access-sub" class="sub"></p>
+      </div>
+      <button type="button" class="close" data-close aria-label="Fechar">×</button>
+    </div>
+    <form id="access-form" class="dialog-body" autocomplete="off">
+      <p class="lead">
+        Para criar, editar e excluir é preciso uma chave de API de <strong>editor</strong> (criar e editar) ou de
+        <strong>administrador</strong> (também exclui). A consulta continua livre para todos.
+      </p>
+      <div class="field">
+        <label for="access-key">Chave de API</label>
+        <input id="access-key" name="key" type="password" autocomplete="off" spellcheck="false" placeholder="Cole sua chave aqui">
+      </div>
+      <label class="check"><input id="access-remember" type="checkbox"> Lembrar neste navegador</label>
+      <p id="access-error" class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions">
+        <button id="access-signout" type="button" class="btn btn-ghost" hidden>Sair do modo edição</button>
+        <button id="access-submit" type="submit" class="btn">Entrar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Criar / editar -->
+  <dialog id="form-dialog" aria-labelledby="form-title">
+    <div class="dialog-head">
+      <div>
+        <h2 id="form-title"></h2>
+        <p id="form-subtitle" class="sub"></p>
+      </div>
+      <button type="button" class="close" data-close aria-label="Fechar">×</button>
+    </div>
+    <form id="entity-form" class="dialog-body"></form>
+  </dialog>
+
+  <!-- Confirmar exclusão -->
+  <dialog id="confirm-dialog" class="closable" aria-labelledby="confirm-title">
+    <div class="dialog-head danger">
+      <h2 id="confirm-title">Excluir</h2>
+      <button type="button" class="close" data-close aria-label="Fechar">×</button>
+    </div>
+    <div class="dialog-body">
+      <p id="confirm-message"></p>
+      <p id="confirm-error" class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
+        <button id="confirm-ok" type="button" class="btn btn-danger">Excluir</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <noscript><p class="noscript">Este site precisa de JavaScript para funcionar.</p></noscript>
   <script src="/site/app.js" defer></script>

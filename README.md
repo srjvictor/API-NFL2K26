@@ -152,10 +152,29 @@ Fora de um proxy (desenvolvimento) o header fica vazio e vale o IP da conexão.
 
 ### Site de consulta
 
-A raiz (`/`) serve um site simples para pesquisar os dados sem usar o Swagger: abas de Times, Jogadores, Estádios,
-Patrocinadores e Partidas, filtros por nome/posição/conferência etc., paginação e uma janela de detalhes (o elenco de um
-time é carregado seguindo o link HATEOAS `players`). Na primeira visita o site pede sozinho uma chave `READ_ONLY` em
-`/api/keys/register` e a guarda no navegador; se ela deixar de valer (a API reiniciou), pede outra automaticamente.
+A raiz (`/`) serve um site para consultar **e gerenciar** os dados sem usar o Swagger: abas de Times, Jogadores,
+Estádios, Patrocinadores e Partidas, filtros por nome/posição/conferência etc., paginação e uma janela de detalhes (o
+elenco de um time é carregado seguindo o link HATEOAS `players`).
+
+**Consulta (GET)** é livre: na primeira visita o site pede sozinho uma chave `READ_ONLY` em `/api/keys/register` e a
+guarda no navegador; se ela deixar de valer (a API reiniciou), pede outra automaticamente.
+
+**Criar, editar e excluir (POST, PUT, DELETE)** exigem o botão **Entrar para editar** (canto superior direito) e uma chave de
+API informada pelo usuário. O site descobre o nível da chave em `GET /api/keys/me`:
+
+| Chave | O que aparece |
+|---|---|
+| `READ_ONLY` / sem chave | só consulta |
+| `READ_WRITE` (editor) | **+ Novo** e **Editar** (um editor vincula patrocinadores a um time, mas não os remove) |
+| `ADMIN` | também **Excluir** (com confirmação) |
+
+Em produção a chave ADMIN é o valor de `NFL_ADMIN_KEY`; no desenvolvimento, `nfl_admin_dev_key_123`. Outras chaves são
+criadas por um administrador em `POST /api/keys`. A chave de edição fica só na aba do navegador (some ao fechá-la), a
+menos que se marque **Lembrar neste navegador**. Esconder botões é apenas conveniência: quem decide é a API, que continua
+respondendo 401/403 a quem não tem permissão. Se a chave for revogada, o site avisa e volta ao modo somente leitura.
+
+Os formulários validam no navegador e mostram, campo a campo, os erros devolvidos pela API (ex.: nome duplicado, camisa
+já usada no time, mandante igual ao visitante). Cada formulário de criação usa um `X-Idempotency-Key` próprio.
 Arquivos: `src/main/resources/static/index.html` e `static/site/`.
 
 ### Erros
