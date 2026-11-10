@@ -6,6 +6,7 @@ API RESTful sobre a NFL desenvolvida com **Spring Boot 4.1.1** e **Java 17**: ti
 
 | Recurso | URL |
 |---|---|
+| **Site de consulta** (pesquisa de times, jogadores, estádios, patrocinadores e partidas) | https://nfl-api-w1hc.onrender.com/ |
 | Swagger UI | https://nfl-api-w1hc.onrender.com/swagger-ui.html |
 | Raiz HATEOAS | https://nfl-api-w1hc.onrender.com/api |
 | OpenAPI (JSON) | https://nfl-api-w1hc.onrender.com/v3/api-docs/v1 e `/v3/api-docs/v2` |
@@ -19,6 +20,7 @@ mvnw.cmd spring-boot:run      # Windows
 
 | Recurso | URL |
 |---|---|
+| Site de consulta | http://localhost:8080/ |
 | Swagger UI | http://localhost:8080/swagger-ui.html |
 | OpenAPI (JSON) | http://localhost:8080/v3/api-docs/v1 e `/v3/api-docs/v2` |
 | Raiz HATEOAS | http://localhost:8080/api |
@@ -38,10 +40,11 @@ Ative com `SPRING_PROFILES_ACTIVE=prod`. Diferenças em relação ao desenvolvim
 | `NFL_ADMIN_KEY` | **sim** (mín. 16 caracteres) | Chave ADMIN. Sem ela a aplicação não sobe; a chave de dev deixa de existir. |
 | `NFL_CORS_ALLOWED_ORIGINS` | não | Frontends autorizados, separados por vírgula (ex.: `https://meu-front.vercel.app`). Padrão: nenhum. |
 | `NFL_RATE_LIMIT_CAPACITY` | não | Requisições por minuto por IP (padrão 60). |
+| `NFL_CLIENT_IP_HEADER` | não | Header com o IP real do cliente, definido pelo proxy (padrão `True-Client-IP`). Veja "Rate limiting". |
 | `PORT` | não | Porta HTTP (padrão 8080; Render/Railway definem sozinhos). |
 
 Além disso: console H2 desligado e `server.forward-headers-strategy=framework`, para que atrás do proxy HTTPS da
-plataforma os links HATEOAS saiam com `https://seu-dominio` e o rate limit enxergue o IP real do cliente.
+plataforma os links HATEOAS saiam com `https://seu-dominio`.
 
 Rodando o `.jar` com o perfil de produção:
 
@@ -108,7 +111,7 @@ Todas as listagens são paginadas (`?page=0&size=10&sort=name,asc`) e retornam `
 | **Partidas** `/api/games` | `GET` · `GET /{id}` · `POST` · `PUT /{id}` · `PATCH /{id}/score` · `DELETE /{id}` · `GET /search?season=&week=&status=` · `GET /team/{teamId}` |
 | **Chaves** `/api/keys` | `POST /register` (público) · `POST` · `GET` · `GET /me` · `GET /{id}` · `PATCH /{id}/revoke` · `DELETE /{id}` |
 
-Códigos de status: `200` consulta/atualização · `201` + `Location` criação · `204` exclusão · `400` validação · `401` sem chave · `403` nível insuficiente · `404` não encontrado · `405` método · `409` conflito · `415` content-type · `422` regra de negócio · `429` rate limit · `500` erro interno.
+Códigos de status: `200` consulta/atualização · `201` + `Location` criação · `204` exclusão · `400` validação · `401` sem chave · `403` nível insuficiente · `404` não encontrado · `405` método · `409` conflito · `415` content-type · `422` regra de negócio · `429` rate limit.
 
 ### HATEOAS
 
@@ -123,7 +126,9 @@ Todo `POST` exige o header. O `IdempotencyFilter` grava a chave (por cliente) co
 - primeira chamada → processa e armazena a resposta 2xx;
 - repetição com o mesmo corpo → devolve a resposta original com `Idempotent-Replayed: true`, **sem criar outro registro**;
 - mesma chave com corpo diferente → `422`; chave ainda em processamento → `409`;
-- respostas de erro não são guardadas (o cliente pode corrigir e tentar de novo); as chaves expiram em 24 h.
+- respostas de erro não são guardadas (o cliente pode corrigir e tentar de novo); as chaves expiram em 24 h e os registros vencidos são apagados automaticamente a cada hora;
+- a chave de API gerada em `/api/keys` **nunca é guardada em texto puro**: numa repetição a resposta volta com `apiKey: null` e um aviso;
+- no Swagger o campo já vem como `auto`, que gera um UUID novo a cada envio; digite um valor fixo para testar a repetição.
 
 ### Autenticação por chave (`X-API-Key`)
 
@@ -138,6 +143,25 @@ As chaves são aleatórias (`nfl_` + 256 bits) e apenas o **hash SHA-256** é sa
 ### Rate limiting
 
 Janela fixa por IP (padrão 60 req/min, configurável em `nfl.rate-limit.*`). Toda resposta traz `X-RateLimit-Limit`, `X-RateLimit-Remaining` e `X-RateLimit-Reset`. Ao estourar: **429** com `Retry-After`.
+
+**Qual é o IP do cliente?** Atrás de um proxy, o IP da conexão é o do próprio proxy. O `X-Forwarded-For` não serve para
+identificar o cliente, porque o proxy *acrescenta* ao valor enviado por ele e qualquer um consegue forjá-lo para zerar o
+contador. Por isso, em produção o IP vem do header configurado em `nfl.rate-limit.client-ip-header`
+(`True-Client-IP`, definido pelo proxy da plataforma). Valores que não parecem um IP são ignorados.
+Fora de um proxy (desenvolvimento) o header fica vazio e vale o IP da conexão.
+
+### Site de consulta
+
+A raiz (`/`) serve um site simples para pesquisar os dados sem usar o Swagger: abas de Times, Jogadores, Estádios,
+Patrocinadores e Partidas, filtros por nome/posição/conferência etc., paginação e uma janela de detalhes (o elenco de um
+time é carregado seguindo o link HATEOAS `players`). Na primeira visita o site pede sozinho uma chave `READ_ONLY` em
+`/api/keys/register` e a guarda no navegador; se ela deixar de valer (a API reiniciou), pede outra automaticamente.
+Arquivos: `src/main/resources/static/index.html` e `static/site/`.
+
+### Erros
+
+Toda falha sai no formato `ApiError` (`status`, `error`, `message`, `path`, `fieldErrors`). Entradas inválidas (ordenação
+com campo inexistente, `%` solto na URL, corpo multipart etc.) retornam **400** com uma mensagem explicando o problema.
 
 ### CORS
 

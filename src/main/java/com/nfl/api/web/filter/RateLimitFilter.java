@@ -28,12 +28,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final int capacity;
     private final long windowMillis;
     private final ErrorResponseWriter errorWriter;
+    private final ClientIpResolver clientIpResolver;
     private final Map<String, Window> windows = new ConcurrentHashMap<>();
 
-    public RateLimitFilter(AppProperties properties, ErrorResponseWriter errorWriter) {
+    public RateLimitFilter(AppProperties properties, ErrorResponseWriter errorWriter,
+                           ClientIpResolver clientIpResolver) {
         this.capacity = properties.rateLimit().capacity();
         this.windowMillis = properties.rateLimit().windowSeconds() * 1000;
         this.errorWriter = errorWriter;
+        this.clientIpResolver = clientIpResolver;
     }
 
     /** Janela de contagem de um cliente. Imutável: cada requisição gera uma nova instância. */
@@ -49,7 +52,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         long now = System.currentTimeMillis();
-        String client = request.getRemoteAddr();
+        String client = clientIpResolver.resolve(request);
 
         Window window = windows.compute(client, (k, w) ->
                 (w == null || now - w.startMillis() >= windowMillis) ? new Window(now, 1) : new Window(w.startMillis(), w.count() + 1));

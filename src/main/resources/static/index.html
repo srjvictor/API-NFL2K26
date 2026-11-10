@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NFL · Consulta de times, jogadores e partidas</title>
+  <meta name="description" content="Pesquise times, jogadores, estádios, patrocinadores e partidas da NFL.">
+  <link rel="icon" type="image/svg+xml" href="/nfl/nfl-logo.svg">
+  <link rel="stylesheet" href="/site/site.css">
+</head>
+<body>
+  <a class="skip" href="#panel">Pular para os resultados</a>
+
+  <header class="top">
+    <div class="top-inner">
+      <img class="logo" src="/nfl/nfl-logo.svg" alt="" width="52" height="58">
+      <div class="brand">
+        <h1>NFL <span>Consulta</span></h1>
+        <p>Pesquise times, jogadores, estádios, patrocinadores e partidas da liga</p>
+      </div>
+      <a class="docs" href="/swagger-ui.html">Documentação da API</a>
+    </div>
+    <div class="yardlines" aria-hidden="true"></div>
+  </header>
+
+  <nav class="tabs-bar" aria-label="Categorias">
+    <div id="tabs" class="tabs" role="tablist"></div>
+  </nav>
+
+  <main>
+    <div id="filters" class="filters"></div>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <div id="panel" role="tabpanel">
+      <div id="results" class="grid" aria-busy="true"></div>
+    </div>
+    <nav id="pager" class="pager" aria-label="Paginação"></nav>
+  </main>
+
+  <footer class="foot">
+    Dados de exemplo · API REST com Spring Boot ·
+    <a href="/swagger-ui.html">Documentação (Swagger)</a>
+  </footer>
+
+  <dialog id="detail" aria-labelledby="detail-title">
+    <div class="dialog-head">
+      <div>
+        <h2 id="detail-title"></h2>
+        <p id="detail-subtitle" class="sub"></p>
+      </div>
+      <button id="detail-close" type="button" class="close" aria-label="Fechar">×</button>
+    </div>
+    <div id="detail-body"></div>
+  </dialog>
+
+  <noscript><p class="noscript">Este site precisa de JavaScript para funcionar.</p></noscript>
+  <script src="/site/app.js" defer></script>
+</body>
+</html>

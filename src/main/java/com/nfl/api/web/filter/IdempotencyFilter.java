@@ -43,12 +43,14 @@ public class IdempotencyFilter extends OncePerRequestFilter {
     private final IdempotencyRecordRepository repository;
     private final ErrorResponseWriter errorWriter;
     private final Duration ttl;
+    private final ClientIpResolver clientIpResolver;
 
     public IdempotencyFilter(IdempotencyRecordRepository repository, ErrorResponseWriter errorWriter,
-                             AppProperties properties) {
+                             AppProperties properties, ClientIpResolver clientIpResolver) {
         this.repository = repository;
         this.errorWriter = errorWriter;
         this.ttl = Duration.ofHours(properties.idempotency().ttlHours());
+        this.clientIpResolver = clientIpResolver;
     }
 
     @Override
@@ -74,7 +76,8 @@ public class IdempotencyFilter extends OncePerRequestFilter {
 
         CachedBodyHttpServletRequest cachedRequest = new CachedBodyHttpServletRequest(request);
         String clientId = clientId(request);
-        String requestHash = ApiKeyService.sha256(request.getMethod() + " " + request.getRequestURI() + "\n"
+        String query = request.getQueryString() != null ? "?" + request.getQueryString() : "";
+        String requestHash = ApiKeyService.sha256(request.getMethod() + " " + request.getRequestURI() + query + "\n"
                 + new String(cachedRequest.getBody(), StandardCharsets.UTF_8));
 
         Optional<IdempotencyRecord> existing = repository.findByClientIdAndIdempotencyKey(clientId, key);
@@ -112,7 +115,8 @@ public class IdempotencyFilter extends OncePerRequestFilter {
             if (status >= 200 && status < 300) {
                 record.setStatus(IdempotencyStatus.COMPLETED);
                 record.setResponseStatus(status);
-                record.setResponseBody(new String(cachedResponse.getContentAsByteArray(), StandardCharsets.UTF_8));
+                record.setResponseBody(sanitize(request,
+                        new String(cachedResponse.getContentAsByteArray(), StandardCharsets.UTF_8)));
                 record.setContentType(cachedResponse.getContentType());
                 record.setLocation(cachedResponse.getHeader("Location"));
                 repository.save(record);
@@ -153,10 +157,25 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         response.getOutputStream().write(body);
     }
 
+    /**
+     * A resposta guardada para repetição não pode conter segredos: a chave de API gerada nunca é salva em
+     * texto puro (o banco só tem o hash dela). Numa repetição o cliente recebe o aviso no lugar do valor.
+     */
+    private String sanitize(HttpServletRequest request, String body) {
+        if (!request.getRequestURI().startsWith("/api/keys")) {
+            return body;
+        }
+        return body
+                .replaceAll("\"apiKey\"\\s*:\\s*\"[^\"]*\"", "\"apiKey\":null")
+                .replaceAll("\"message\"\\s*:\\s*\"[^\"]*\"",
+                        "\"message\":\"Esta chave já foi gerada e, por segurança, não é exibida novamente. "
+                                + "Gere outra usando um novo X-Idempotency-Key.\"");
+    }
+
     /** Escopo da chave: a chave de API (hash) ou, para rotas públicas, o IP do cliente. */
     private String clientId(HttpServletRequest request) {
         String apiKey = request.getHeader(ApiKeyAuthFilter.HEADER);
-        String raw = (apiKey != null && !apiKey.isBlank()) ? "key:" + apiKey.trim() : "ip:" + request.getRemoteAddr();
+        String raw = (apiKey != null && !apiKey.isBlank()) ? "key:" + apiKey.trim() : "ip:" + clientIpResolver.resolve(request);
         return ApiKeyService.sha256(raw);
     }
 }

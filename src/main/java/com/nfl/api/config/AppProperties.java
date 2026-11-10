@@ -22,8 +22,13 @@ public record AppProperties(Security security, RateLimit rateLimit, Cors cors, I
         }
     }
 
-    /** @param capacity requisições permitidas por janela; @param windowSeconds duração da janela */
-    public record RateLimit(int capacity, long windowSeconds) {
+    /**
+     * @param capacity        requisições permitidas por janela
+     * @param windowSeconds   duração da janela
+     * @param clientIpHeader  header (definido pelo proxy de confiança) com o IP real do cliente;
+     *                        vazio = usa o IP da conexão. Nunca aponte para um header que o cliente possa forjar.
+     */
+    public record RateLimit(int capacity, long windowSeconds, String clientIpHeader) {
     }
 
     public record Cors(List<String> allowedOrigins, List<String> allowedMethods, long maxAgeSeconds) {

@@ -4,7 +4,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.tomcat.util.http.InvalidParameterException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -111,6 +114,28 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PropertyReferenceException.class)
     public ResponseEntity<ApiError> handleBadSort(PropertyReferenceException ex, HttpServletRequest req) {
         return build(HttpStatus.BAD_REQUEST, "Propriedade de ordenação inválida: " + ex.getPropertyName(), req);
+    }
+
+    /** Ordenação com expressão inválida (ex.: ?sort=;drop). Outros usos incorretos do acesso a dados seguem como erro interno. */
+    @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    public ResponseEntity<ApiError> handleInvalidDataAccess(InvalidDataAccessApiUsageException ex, HttpServletRequest req) {
+        if (ex.getMessage() != null && ex.getMessage().contains("Sort expression")) {
+            return build(HttpStatus.BAD_REQUEST,
+                    "Parâmetro de ordenação inválido: use sort=campo,asc ou sort=campo,desc com um campo existente", req);
+        }
+        return handleUnexpected(ex, req);
+    }
+
+    /** Caracteres mal codificados na URL (ex.: um '%' solto). */
+    @ExceptionHandler(InvalidParameterException.class)
+    public ResponseEntity<ApiError> handleBadUrlEncoding(InvalidParameterException ex, HttpServletRequest req) {
+        return build(HttpStatus.BAD_REQUEST,
+                "Parâmetros da URL com codificação inválida (ex.: use %25 para o caractere %)", req);
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiError> handleMultipart(MultipartException ex, HttpServletRequest req) {
+        return build(HttpStatus.BAD_REQUEST, "Requisição multipart inválida. Envie o corpo como application/json", req);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

@@ -56,6 +56,7 @@ public class NflSwaggerIndexTransformer extends SwaggerIndexPageTransformer {
                 .replace("</head>", """
                             <link rel="icon" type="image/svg+xml" href="/nfl/nfl-logo.svg" />
                             <link rel="stylesheet" type="text/css" href="/nfl/nfl-swagger.css" />
+                            <script src="/nfl/nfl-swagger.js"></script>
                           </head>""")
                 .replace("<div id=\"swagger-ui\"></div>", HEADER + "<div id=\"swagger-ui\"></div>");
         return new TransformedResource(resource, html.getBytes(StandardCharsets.UTF_8));

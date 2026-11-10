@@ -55,8 +55,10 @@ public class OpenApiConfig {
                                 | ADMIN | tudo, inclusive DELETE e gestão de chaves |
 
                                 ### Idempotência
-                                Todo `POST` exige o header `X-Idempotency-Key` (ex.: um UUID). Repetir a mesma chave com o mesmo
+                                Todo `POST` exige o header `X-Idempotency-Key`. Aqui no Swagger o campo já vem como `auto`
+                                (um UUID novo a cada envio); digite um valor fixo para testar: repetir a mesma chave com o mesmo
                                 corpo devolve a resposta original (header `Idempotent-Replayed: true`) sem criar outro registro.
+                                Chaves de API geradas nunca são reexibidas numa repetição.
 
                                 ### Rate limiting
                                 Limite por IP. Toda resposta traz `X-RateLimit-Limit`, `X-RateLimit-Remaining` e `X-RateLimit-Reset`.
@@ -138,7 +140,7 @@ public class OpenApiConfig {
 
     /**
      * Acrescenta a todas as operações o header de idempotência (POST) e as respostas de erro
-     * comuns geradas pelos filtros (400, 401, 403, 429, 500).
+     * comuns geradas pelos filtros (400, 401, 403, 429).
      * Precisa ser Global*: um OperationCustomizer comum não é aplicado aos grupos v1/v2.
      */
     @Bean
@@ -153,8 +155,8 @@ public class OpenApiConfig {
                 operation.addParametersItem(new HeaderParameter()
                         .name(IdempotencyFilter.HEADER)
                         .required(true)
-                        .description("Chave única da operação (ex.: UUID). Reenvios com a mesma chave não criam duplicatas.")
-                        .schema(new StringSchema().example("8f14e45f-ceea-467a-9575-0f2b1a3c6d7e")));
+                        .description("Chave única da operação. Deixe \"auto\" para gerar um UUID novo a cada envio; digite um valor fixo para testar a idempotência (reenviar a mesma chave com o mesmo corpo não cria duplicatas).")
+                        .schema(new StringSchema()._default("auto").example("auto")));
             }
 
             ApiResponses responses = operation.getResponses();
@@ -168,7 +170,6 @@ public class OpenApiConfig {
                 addIfAbsent(responses, "422", "X-Idempotency-Key reutilizada com corpo diferente / regra de negócio");
             }
             addIfAbsent(responses, "429", "Limite de requisições excedido (veja o header Retry-After)");
-            addIfAbsent(responses, "500", "Erro interno inesperado");
             return operation;
         };
     }
