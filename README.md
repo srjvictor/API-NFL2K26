@@ -179,7 +179,9 @@ já usada no time, mandante igual ao visitante). Cada formulário de criação u
 Acabamento visual do site:
 - **Faixa de placares** no topo, com os 12 jogos mais recentes (clicar abre os detalhes da partida).
 - **Campo com o elenco** na janela de detalhes de um time: cada jogador aparece na sua posição, na cor da posição; onde há
-  mais jogadores do que lugares no campo aparece `+n`. A lista completa fica logo abaixo.
+  mais jogadores do que lugares no campo aparece `+n`. Quem ocupa os lugares é quem foi cadastrado primeiro: nos dados de
+  exemplo do Kansas City Chiefs (54 jogadores) são os titulares do depth chart, e os reservas vêm depois. A lista completa
+  fica logo abaixo.
 - **Cartões** sobem ao passar o mouse, com a sombra na cor do contexto (posição, conferência); ao trocar de aba ou de página
   aparecem esqueletos de carregamento e os cartões entram em sequência. Tudo respeita `prefers-reduced-motion`.
 

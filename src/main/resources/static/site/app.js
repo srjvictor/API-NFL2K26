@@ -1190,7 +1190,8 @@
     const dots = [];
     for (const [position, list] of Object.entries(byPosition)) {
       const slots = FORMATION[position] || [];
-      list.sort((a, b) => a.jerseyNumber - b.jerseyNumber);
+      // Quem foi cadastrado antes ocupa os primeiros lugares (no Chiefs, os titulares do depth chart)
+      list.sort((a, b) => a.id - b.id);
       list.slice(0, slots.length).forEach((p, i) => dots.push(fieldDot(p, slots[i], onHover)));
       const extra = list.length - slots.length;
       if (slots.length && extra > 0) { // há mais jogadores na posição do que lugares no campo
