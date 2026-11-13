@@ -175,6 +175,14 @@ respondendo 401/403 a quem não tem permissão. Se a chave for revogada, o site 
 
 Os formulários validam no navegador e mostram, campo a campo, os erros devolvidos pela API (ex.: nome duplicado, camisa
 já usada no time, mandante igual ao visitante). Cada formulário de criação usa um `X-Idempotency-Key` próprio.
+
+Acabamento visual do site:
+- **Faixa de placares** no topo, com os 12 jogos mais recentes (clicar abre os detalhes da partida).
+- **Campo com o elenco** na janela de detalhes de um time: cada jogador aparece na sua posição, na cor da posição; onde há
+  mais jogadores do que lugares no campo aparece `+n`. A lista completa fica logo abaixo.
+- **Cartões** sobem ao passar o mouse, com a sombra na cor do contexto (posição, conferência); ao trocar de aba ou de página
+  aparecem esqueletos de carregamento e os cartões entram em sequência. Tudo respeita `prefers-reduced-motion`.
+
 Arquivos: `src/main/resources/static/index.html` e `static/site/`.
 
 ### Erros

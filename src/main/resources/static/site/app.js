@@ -196,6 +196,7 @@
     for (const key of Object.keys(lookups)) delete lookups[key];
     state.teamsLoaded = false;
     if (state.tab === 'players') loadTeamOptions();
+    loadStrip(); // a faixa de placares reflete partidas criadas, editadas ou excluídas
   }
 
   // ---------- Definição das abas ----------
@@ -225,7 +226,7 @@
     { name: 'lastName', label: 'Sobrenome', type: 'text', required: true, maxlength: 40 },
     { name: 'jerseyNumber', label: 'Número da camisa', type: 'number', required: true, min: 0, max: 99 },
     { name: 'position', label: 'Posição', type: 'select', required: true,
-      options: entries(POSITIONS).map(([value, label]) => ({ value, label: `${value} · ${label}` })) },
+      options: entries(POSITIONS).map(([value, label]) => ({ value, label: `${value} (${label})` })) },
     { name: 'birthDate', label: 'Data de nascimento', type: 'date', required: true,
       max: new Date(Date.now() - 86400000).toISOString().slice(0, 10) },
     { name: 'teamId', label: 'Time', type: 'select', lookup: 'teams', blank: 'Sem time (free agent)' },
@@ -270,17 +271,19 @@
       ],
       request: (v) => ({ path: '/api/teams/search', params: v }),
       card: teamCard, detail: teamDetail, afterSave: syncTeamSponsors,
+      detailClass: (t) => `team-${t.conference.toLowerCase()}`,
     },
     players: {
       label: 'Jogadores', rel: 'players', singular: 'jogador', endpoint: '/api/players', form: PLAYER_FORM,
       itemLabel: (p) => `${p.firstName} ${p.lastName}`,
       fields: [
         text('name', 'Nome do jogador', 'Ex.: Mahomes'),
-        select('position', 'Posição', [...all, ...entries(POSITIONS).map(([k, v]) => [k, `${k} · ${v}`])]),
+        select('position', 'Posição', [...all, ...entries(POSITIONS).map(([k, v]) => [k, `${k} (${v})`])]),
         { type: 'select', name: 'teamId', label: 'Time', options: () => teamOptions },
       ],
       request: (v) => ({ path: '/api/players/search', params: v }),
       card: playerCard, detail: playerDetail,
+      detailClass: (p) => `pos-${p.position}`,
     },
     stadiums: {
       label: 'Estádios', rel: 'stadiums', singular: 'estádio', endpoint: '/api/stadiums', form: STADIUM_FORM,
@@ -354,6 +357,7 @@
     $('#panel').setAttribute('aria-labelledby', `tab-${key}`);
     if (focus) $(`#tab-${key}`).focus();
     if (key === 'players') loadTeamOptions();
+    state.fresh = true;
     load();
   }
 
@@ -420,7 +424,7 @@
     valuesFor(state.tab)[name] = value;
     state.page = 0;
     clearTimeout(debounceTimer);
-    if (immediate) load();
+    if (immediate) { state.fresh = true; load(); }
     else debounceTimer = setTimeout(load, 400);
   }
 
@@ -428,6 +432,7 @@
     state.values[state.tab] = { ...(TABS[state.tab].defaults || {}) };
     state.page = 0;
     renderFilters();
+    state.fresh = true;
     load();
   }
 
@@ -459,14 +464,22 @@
     query.set('page', state.page);
     query.set('size', PAGE_SIZE);
 
+    // Troca de aba, de página ou de filtro de seleção: esqueletos enquanto carrega e entrada animada dos cartões.
+    // Digitar na busca só troca os cartões (sem piscar).
+    const fresh = state.fresh;
+    state.fresh = false;
     resultsEl.setAttribute('aria-busy', 'true');
     setStatus('Carregando…');
+    if (fresh) {
+      resultsEl.replaceChildren(...skeletonCards(state.tab));
+      pagerEl.replaceChildren();
+    }
     try {
       const data = await request(`${path}?${query}`);
       if (token !== state.loadToken) return; // chegou uma busca mais nova
       const items = data._embedded?.[tab.rel] ?? [];
       const page = data.page || { totalElements: items.length, totalPages: 1, number: 0 };
-      renderResults(tab, items, page);
+      renderResults(tab, items, page, fresh);
     } catch (error) {
       if (token !== state.loadToken) return;
       resultsEl.replaceChildren();
@@ -480,7 +493,7 @@
     }
   }
 
-  function renderResults(tab, items, page) {
+  function renderResults(tab, items, page, animate = false) {
     state.count = items.length;
     if (items.length === 0) {
       // Página vazia depois de excluir o último item de uma página: volta uma página
@@ -497,9 +510,13 @@
       setStatus('0 resultados');
       return;
     }
-    resultsEl.replaceChildren(...items.map((item) => {
+    resultsEl.replaceChildren(...items.map((item, index) => {
       const card = tab.card(item);
       card.classList.add('card');
+      if (animate) {
+        card.classList.add('enter');
+        card.style.setProperty('--i', Math.min(index, 11));
+      }
       card.append(h('div', { class: 'card-actions' },
         h('button', { type: 'button', class: 'act act-link', onclick: () => openDetail(tab, item) }, 'Ver detalhes'),
         actionButtons(tab, item)));
@@ -522,13 +539,14 @@
     }
     const go = (delta) => () => {
       state.page = Math.max(0, Math.min(page.totalPages - 1, state.page + delta));
+      state.fresh = true;
       load();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     pagerEl.replaceChildren(
-      h('button', { type: 'button', class: 'btn', disabled: page.number <= 0, onclick: go(-1) }, '← Anterior'),
+      h('button', { type: 'button', class: 'btn', disabled: page.number <= 0, onclick: go(-1) }, 'Anterior'),
       h('span', { class: 'pager-info' }, `Página ${page.number + 1} de ${page.totalPages}`),
-      h('button', { type: 'button', class: 'btn', disabled: page.number >= page.totalPages - 1, onclick: go(1) }, 'Próxima →'));
+      h('button', { type: 'button', class: 'btn', disabled: page.number >= page.totalPages - 1, onclick: go(1) }, 'Próxima'));
   }
 
   /** Botões "Editar" e "Excluir" conforme o nível da chave (o servidor confere de novo). */
@@ -550,72 +568,83 @@
   }
 
   // ---------- Cartões ----------
-  const chip = (label, kind) => h('span', { class: `chip${kind ? ' chip-' + kind : ''}` }, label);
+  // Cada tipo de dado tem o seu desenho; os numerais grandes (fonte de display) são a identidade visual:
+  // número da camisa, sigla do time, capacidade do estádio, valor do patrocínio e placar.
   const meta = (label, value) => (value == null || value === '') ? null
     : h('li', null, h('span', { class: 'meta-label' }, label), h('span', null, value));
+  const stat = (value, label) => h('li', { class: 'stat' },
+    h('span', { class: 'stat-num' }, value), h('span', { class: 'stat-label' }, label));
+  const moneyCompact = new Intl.NumberFormat('pt-BR', {
+    style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1,
+  });
+  const BAR_CAPACITY = 100000; // a barra do estádio é proporcional a 100 mil lugares
 
   function teamCard(t) {
-    return h('article', { class: `team-${t.conference.toLowerCase()}`, 'aria-label': t.name },
-      h('div', { class: 'card-head' },
-        h('span', { class: 'badge' }, t.abbreviation),
-        h('div', null, h('h3', null, t.name), h('p', { class: 'sub' }, t.city))),
-      h('div', { class: 'chips' }, chip(t.conference, t.conference.toLowerCase()), chip(DIVISIONS[t.division] || t.division)),
-      h('ul', { class: 'meta' },
-        meta('Fundado em', t.foundedYear),
-        meta('Super Bowls', t.superBowlTitles),
-        meta('Estádio', t.stadiumName),
-        meta('Jogadores', t.playerCount)));
+    return h('article', { class: `team team-${t.conference.toLowerCase()}`, 'aria-label': t.name },
+      h('div', { class: 'card-main' },
+        h('div', { class: 'team-head' },
+          h('span', { class: 'abbr', 'aria-hidden': 'true' }, t.abbreviation),
+          h('div', null,
+            h('h3', null, t.name),
+            h('p', { class: 'sub' }, `${t.city}, ${t.conference} ${DIVISIONS[t.division] || t.division}`))),
+        h('ul', { class: 'stats' },
+          stat(t.superBowlTitles, 'Super Bowls'), stat(t.playerCount, 'Jogadores'), stat(t.foundedYear, 'Fundação')),
+        t.stadiumName ? h('p', { class: 'facts' }, `Estádio: ${t.stadiumName}`) : null));
   }
 
   function playerCard(p) {
-    return h('article', { 'aria-label': `${p.firstName} ${p.lastName}` },
-      h('div', { class: 'card-head' },
-        h('span', { class: 'badge badge-number' }, `#${p.jerseyNumber}`),
-        h('div', null, h('h3', null, `${p.firstName} ${p.lastName}`), h('p', { class: 'sub' }, p.teamName || 'Sem time'))),
-      h('div', { class: 'chips' }, chip(p.position, 'pos'), chip(POSITIONS[p.position] || '')),
-      h('ul', { class: 'meta' },
-        meta('Universidade', p.college),
-        meta('Altura', p.heightCm ? `${p.heightCm} cm` : null),
-        meta('Peso', p.weightKg ? `${p.weightKg} kg` : null)));
+    // A classe pos-XX (QB, WR...) define a cor da camisa; posição desconhecida cai no azul-marinho padrão
+    const details = [p.college, p.heightCm ? `${p.heightCm} cm` : null, p.weightKg ? `${p.weightKg} kg` : null]
+      .filter(Boolean);
+    return h('article', { class: `player pos-${p.position}`, 'aria-label': `${p.firstName} ${p.lastName}` },
+      h('div', { class: 'jersey' },
+        h('span', { class: 'jersey-num' }, h('span', { class: 'sr-only' }, 'Camisa '), p.jerseyNumber),
+        h('span', { class: 'jersey-pos' }, p.position)),
+      h('div', { class: 'card-main' },
+        h('div', null,
+          h('h3', null, `${p.firstName} ${p.lastName}`),
+          h('p', { class: 'sub' }, POSITIONS[p.position] || p.position),
+          h('p', { class: 'sub' }, p.teamName || 'Sem time')),
+        details.length ? h('p', { class: 'facts' }, details.join(', ')) : null));
   }
 
   function stadiumCard(s) {
-    return h('article', { 'aria-label': s.name },
-      h('div', { class: 'card-head' },
-        h('span', { class: 'badge badge-field' }, 'EST'),
-        h('div', null, h('h3', null, s.name), h('p', { class: 'sub' }, s.city))),
-      h('div', { class: 'chips' }, chip(ROOFS[s.roofType] || s.roofType, 'roof')),
-      h('ul', { class: 'meta' },
-        meta('Capacidade', number.format(s.capacity)),
-        meta('Inaugurado em', s.openedYear),
-        meta('Time', s.teamName)));
+    const share = Math.max(2, Math.min(100, Math.round((s.capacity / BAR_CAPACITY) * 100)));
+    return h('article', { class: 'stadium', 'aria-label': s.name },
+      h('div', { class: 'card-main' },
+        h('div', null,
+          h('h3', null, s.name),
+          h('p', { class: 'sub' }, s.teamName ? `${s.city}, sede do ${s.teamName}` : s.city)),
+        h('div', null,
+          h('p', { class: 'stat-line' },
+            h('span', { class: 'stat-num' }, number.format(s.capacity)), h('span', { class: 'stat-label' }, 'lugares')),
+          h('div', { class: 'bar', role: 'img', 'aria-label': `${share}% de 100 mil lugares` },
+            h('span', { style: `width:${share}%` }))),
+        h('ul', { class: 'meta' },
+          meta('Cobertura', ROOFS[s.roofType] || s.roofType),
+          meta('Inaugurado em', s.openedYear))));
   }
 
   function sponsorCard(s) {
-    return h('article', { 'aria-label': s.name },
-      h('div', { class: 'card-head' },
-        h('span', { class: 'badge badge-gold' }, '$'),
-        h('div', null, h('h3', null, s.name), h('p', { class: 'sub' }, s.industry))),
-      h('ul', { class: 'meta' },
-        meta('Valor anual', money.format(s.annualValueUsd)),
-        meta('Times', s.teams.length ? s.teams.join(', ') : 'Nenhum')));
+    return h('article', { class: 'sponsor', 'aria-label': s.name },
+      h('div', { class: 'card-main' },
+        h('div', null, h('h3', null, s.name), h('p', { class: 'sub' }, s.industry)),
+        h('p', { class: 'stat-line' },
+          h('span', { class: 'stat-num' }, moneyCompact.format(s.annualValueUsd)), h('span', { class: 'stat-label' }, 'por ano')),
+        h('p', { class: 'facts' }, s.teams.length ? `Patrocina: ${s.teams.join(', ')}` : 'Sem times vinculados')));
   }
 
   function gameCard(g) {
     const played = g.homeScore != null && g.awayScore != null;
-    const winnerHome = g.winner && g.winner === g.homeTeamName;
-    const winnerAway = g.winner && g.winner === g.awayTeamName;
-    const line = (name, score, winner) => h('div', { class: `score-line${winner ? ' winner' : ''}` },
-      h('span', null, name), h('strong', null, played ? score : '–'));
-    return h('article', { 'aria-label': `${g.homeTeamName} contra ${g.awayTeamName}` },
-      h('div', { class: 'chips' },
-        chip(`Temporada ${g.season} · Semana ${g.week}`),
-        chip(GAME_STATUS[g.status] || g.status, g.status === 'FINAL' ? 'final' : 'status')),
-      h('div', { class: 'scoreboard' }, line(g.homeTeamName, g.homeScore, winnerHome), line(g.awayTeamName, g.awayScore, winnerAway)),
-      h('ul', { class: 'meta' },
-        meta('Kickoff', formatDateTime(g.kickoff)),
-        meta('Estádio', g.stadiumName),
-        meta('Vencedor', g.winner)));
+    const line = (name, score) => h('div', { class: `score-line${g.winner === name ? ' winner' : ''}` },
+      h('span', { class: 'team-name' }, name), h('strong', { class: 'score' }, played ? score : '–'));
+    return h('article', { class: 'game', 'aria-label': `${g.homeTeamName} contra ${g.awayTeamName}` },
+      h('div', { class: 'card-main' },
+        h('div', { class: 'board-top' },
+          h('span', null, `Semana ${g.week}, temporada ${g.season}`),
+          h('span', { class: `chip ${g.status === 'FINAL' ? 'chip-final' : 'chip-status'}` }, GAME_STATUS[g.status] || g.status)),
+        h('div', { class: 'scoreboard' }, line(g.homeTeamName, g.homeScore), line(g.awayTeamName, g.awayScore)),
+        h('p', { class: 'board-foot' }, [formatDateTime(g.kickoff), g.stadiumName].filter(Boolean).join(', '))));
   }
 
   // ---------- Detalhes (janela) ----------
@@ -626,6 +655,7 @@
 
   function openDetail(tab, item) {
     const { title, subtitle, body, extra } = tab.detail(item);
+    dialog.className = `closable ${tab.detailClass ? tab.detailClass(item) : ''}`.trim();
     $('#detail-title').textContent = title;
     $('#detail-subtitle').textContent = subtitle || '';
     const content = $('#detail-body');
@@ -654,23 +684,20 @@
 
   function teamDetail(t) {
     return {
-      title: t.name, subtitle: `${t.city} · ${t.conference} ${DIVISIONS[t.division] || t.division}`,
+      title: t.name, subtitle: `${t.city}, ${t.conference} ${DIVISIONS[t.division] || t.division}`,
       body: definitionList([
         ['Sigla', t.abbreviation], ['Fundado em', t.foundedYear], ['Títulos de Super Bowl', t.superBowlTitles],
         ['Estádio', t.stadiumName], ['Patrocinadores', t.sponsors.join(', ')],
       ]),
       extra: (container) => {
-        if (t._links?.players) {
-          loadList(container, 'Elenco', t._links.players.href,
-            (p) => `#${p.jerseyNumber} ${p.firstName} ${p.lastName} — ${p.position}`, 'Nenhum jogador cadastrado.');
-        }
+        if (t._links?.players) loadRoster(container, t);
       },
     };
   }
 
   function playerDetail(p) {
     return {
-      title: `${p.firstName} ${p.lastName}`, subtitle: `#${p.jerseyNumber} · ${POSITIONS[p.position] || p.position}`,
+      title: `${p.firstName} ${p.lastName}`, subtitle: `Camisa ${p.jerseyNumber}, ${POSITIONS[p.position] || p.position}`,
       body: definitionList([
         ['Time', p.teamName || 'Sem time (free agent)'], ['Nascimento', formatDate(p.birthDate)],
         ['Altura', p.heightCm ? `${p.heightCm} cm` : null], ['Peso', p.weightKg ? `${p.weightKg} kg` : null],
@@ -689,7 +716,7 @@
       extra: (container) => {
         if (s._links?.games) {
           loadList(container, 'Jogos no estádio', s._links.games.href,
-            (g) => `${g.homeTeamName} x ${g.awayTeamName} — ${formatDateTime(g.kickoff)}`, 'Nenhum jogo cadastrado.');
+            (g) => `${g.homeTeamName} x ${g.awayTeamName}, ${formatDateTime(g.kickoff)}`, 'Nenhum jogo cadastrado.');
         }
       },
     };
@@ -710,7 +737,7 @@
   function gameDetail(g) {
     return {
       title: `${g.homeTeamName} x ${g.awayTeamName}`,
-      subtitle: `Temporada ${g.season} · Semana ${g.week}`,
+      subtitle: `Temporada ${g.season}, semana ${g.week}`,
       body: definitionList([
         ['Situação', GAME_STATUS[g.status] || g.status],
         ['Placar', g.homeScore != null && g.awayScore != null
@@ -1029,6 +1056,188 @@
     closable.addEventListener('click', (event) => { if (event.target === closable) closable.close(); });
   }
 
+  // ---------- Esqueletos de carregamento ----------
+  const motionOk = () => !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function skeletonCards(tabKey, count = PAGE_SIZE) {
+    return Array.from({ length: count }, () => h('article', {
+      class: `card skeleton${tabKey === 'players' ? ' player' : ''}`, 'aria-hidden': 'true',
+    },
+    tabKey === 'players' ? h('div', { class: 'jersey sk-block' }) : null,
+    h('div', { class: 'card-main' },
+      h('span', { class: 'sk sk-title' }), h('span', { class: 'sk sk-line' }),
+      h('span', { class: 'sk sk-line sk-short' }), h('span', { class: 'sk sk-big' }))));
+  }
+
+  // ---------- Faixa de placares ----------
+  const stripEl = $('#strip');
+  const stripTrack = $('#strip-track');
+  const stripPrev = $('#strip-prev');
+  const stripNext = $('#strip-next');
+
+  function shortKickoff(iso) {
+    const date = new Date(iso);
+    return Number.isNaN(date.getTime()) ? ''
+      : date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function stripStatus(g) {
+    if (g.status === 'FINAL') return 'Final';
+    if (g.status === 'SCHEDULED') return shortKickoff(g.kickoff);
+    return GAME_STATUS[g.status] || g.status;
+  }
+
+  function stripItem(g, abbreviations) {
+    const played = g.homeScore != null && g.awayScore != null;
+    const row = (id, name, score) => h('div', { class: `strip-row${g.winner === name ? ' winner' : ''}` },
+      h('span', { class: 'strip-team' }, abbreviations[id] || name.slice(0, 3).toUpperCase()),
+      h('strong', { class: 'strip-score' }, played ? score : '–'));
+    return h('li', null, h('button', {
+      type: 'button', class: 'strip-game', onclick: () => openDetail(TABS.games, g),
+      'aria-label': `${g.homeTeamName} contra ${g.awayTeamName}, ${stripStatus(g)}`,
+    },
+    h('span', { class: 'strip-status' }, stripStatus(g)),
+    row(g.homeTeamId, g.homeTeamName, g.homeScore),
+    row(g.awayTeamId, g.awayTeamName, g.awayScore)));
+  }
+
+  function updateStripNav() {
+    const max = stripTrack.scrollWidth - stripTrack.clientWidth;
+    stripPrev.hidden = stripNext.hidden = max <= 4;
+    stripPrev.disabled = stripTrack.scrollLeft <= 2;
+    stripNext.disabled = stripTrack.scrollLeft >= max - 2;
+  }
+
+  function stripSkeleton() {
+    stripEl.hidden = false;
+    stripPrev.hidden = stripNext.hidden = true;
+    stripTrack.replaceChildren(...Array.from({ length: 6 }, () => h('li', null,
+      h('div', { class: 'strip-game sk-strip', 'aria-hidden': 'true' },
+        h('span', { class: 'sk sk-line sk-short' }), h('span', { class: 'sk sk-line' }), h('span', { class: 'sk sk-line' })))));
+  }
+
+  /** Jogos mais recentes primeiro. Quem não carregar (erro ou sem jogos) simplesmente não vê a faixa. */
+  async function loadStrip() {
+    try {
+      const [data, teams] = await Promise.all([request('/api/games?size=12&sort=kickoff,desc'), lookup('teams')]);
+      const games = data._embedded?.games ?? [];
+      if (!games.length) { stripEl.hidden = true; return; }
+      const abbreviations = Object.fromEntries(teams.map((t) => [t.id, t.abbreviation]));
+      stripEl.hidden = false;
+      stripTrack.replaceChildren(...games.map((g) => stripItem(g, abbreviations)));
+      stripTrack.scrollLeft = 0;
+      updateStripNav();
+    } catch { stripEl.hidden = true; }
+  }
+
+  const scrollStrip = (direction) => () => stripTrack.scrollBy({
+    left: direction * stripTrack.clientWidth * 0.8, behavior: motionOk() ? 'smooth' : 'auto',
+  });
+  stripPrev.addEventListener('click', scrollStrip(-1));
+  stripNext.addEventListener('click', scrollStrip(1));
+  stripTrack.addEventListener('scroll', updateStripNav, { passive: true });
+  window.addEventListener('resize', updateStripNav);
+
+  // ---------- Campo com o elenco (detalhe do time) ----------
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const FIELD_W = 600;
+  const FIELD_H = 340;
+
+  function svgEl(tag, attrs, ...children) {
+    const node = document.createElementNS(SVG_NS, tag);
+    for (const [name, value] of Object.entries(attrs || {})) if (value != null) node.setAttribute(name, value);
+    for (const child of children.flat(Infinity)) {
+      if (child == null) continue;
+      node.append(child instanceof Node ? child : document.createTextNode(String(child)));
+    }
+    return node;
+  }
+
+  // Posições [x, y] por tipo: ataque à esquerda da linha de scrimmage (x = 300), defesa à direita.
+  const FORMATION = {
+    QB: [[212, 170]],
+    RB: [[160, 170], [160, 120], [160, 220]],
+    WR: [[268, 34], [268, 306], [238, 92], [238, 248]],
+    TE: [[270, 258], [270, 82]],
+    OL: [[268, 114], [268, 142], [268, 170], [268, 198], [268, 226]],
+    DL: [[334, 128], [334, 156], [334, 184], [334, 212]],
+    LB: [[382, 108], [382, 170], [382, 232]],
+    CB: [[432, 36], [432, 304], [410, 96]],
+    S: [[484, 118], [484, 222], [510, 170]],
+    K: [[84, 150]],
+    P: [[84, 196]],
+  };
+
+  function fieldDot(player, [x, y], onHover) {
+    const label = `#${player.jerseyNumber} ${player.firstName} ${player.lastName}, ${POSITIONS[player.position] || player.position}`;
+    const dot = svgEl('g', {
+      class: `dot pos-${player.position}`, transform: `translate(${x} ${y})`, tabindex: '0', role: 'img', 'aria-label': label,
+    }, svgEl('title', null, label), svgEl('circle', { r: 13 }), svgEl('text', { y: 4.5 }, player.jerseyNumber));
+    dot.addEventListener('mouseenter', () => onHover(label));
+    dot.addEventListener('focus', () => onHover(label));
+    return dot;
+  }
+
+  function buildField(players, onHover) {
+    const bands = Array.from({ length: 12 }, (_, i) =>
+      svgEl('rect', { x: i * 50, y: 0, width: 50, height: FIELD_H, fill: i % 2 ? '#123a24' : '#0f3220' }));
+    const yardLines = [];
+    for (let x = 50; x < FIELD_W; x += 50) {
+      yardLines.push(svgEl('line', { x1: x, y1: 0, x2: x, y2: FIELD_H, stroke: 'rgba(255,255,255,.16)', 'stroke-width': 2 }));
+    }
+    const byPosition = {};
+    for (const p of players) (byPosition[p.position] ||= []).push(p);
+    const dots = [];
+    for (const [position, list] of Object.entries(byPosition)) {
+      const slots = FORMATION[position] || [];
+      list.sort((a, b) => a.jerseyNumber - b.jerseyNumber);
+      list.slice(0, slots.length).forEach((p, i) => dots.push(fieldDot(p, slots[i], onHover)));
+      const extra = list.length - slots.length;
+      if (slots.length && extra > 0) { // há mais jogadores na posição do que lugares no campo
+        const [x, y] = slots[slots.length - 1];
+        dots.push(svgEl('text', { class: 'dot-extra', x: x + 20, y: y + 5 }, `+${extra}`));
+      }
+    }
+    return svgEl('svg', {
+      class: 'pitch', viewBox: `0 0 ${FIELD_W} ${FIELD_H}`, role: 'group',
+      'aria-label': 'Campo com a posição de cada jogador do elenco',
+    },
+    bands, yardLines,
+    svgEl('line', { x1: 300, y1: 0, x2: 300, y2: FIELD_H, stroke: '#ffffff', 'stroke-opacity': 0.75, 'stroke-width': 3 }),
+    svgEl('text', { class: 'field-side', x: 14, y: 24 }, 'Ataque'),
+    svgEl('text', { class: 'field-side', x: FIELD_W - 14, y: 24, 'text-anchor': 'end' }, 'Defesa'),
+    dots);
+  }
+
+  async function loadRoster(container, team) {
+    const section = h('section', { class: 'related roster' }, h('h4', null, 'Elenco'), h('p', { class: 'sub' }, 'Carregando…'));
+    container.append(section);
+    try {
+      const href = team._links.players.href;
+      const data = await request(`${localPath(href)}${href.includes('?') ? '&' : '?'}size=100`);
+      const players = data._embedded?.players ?? [];
+      if (!players.length) {
+        section.replaceChildren(h('h4', null, 'Elenco (0)'), h('p', { class: 'sub' }, 'Nenhum jogador cadastrado.'));
+        return;
+      }
+      const caption = h('p', { class: 'field-caption', 'aria-live': 'polite' },
+        'Passe o mouse ou use o teclado sobre um jogador para ver quem é.');
+      const field = buildField(players, (label) => { caption.textContent = label; });
+      const present = [...new Set(players.map((p) => p.position))].filter((p) => FORMATION[p]);
+      const legend = h('ul', { class: 'legend' },
+        present.map((pos) => h('li', { class: `pos-${pos}` }, h('span', { class: 'swatch' }), pos)));
+      const sorted = [...players].sort((a, b) => a.jerseyNumber - b.jerseyNumber);
+      section.replaceChildren(
+        h('h4', null, `Elenco (${players.length})`),
+        h('div', { class: 'field-wrap' }, field), caption, legend,
+        h('details', { class: 'roster-list' }, h('summary', null, 'Ver lista completa'),
+          h('ul', { class: 'related-list' },
+            sorted.map((p) => h('li', null, `#${p.jerseyNumber} ${p.firstName} ${p.lastName}, ${p.position}`)))));
+    } catch (error) {
+      section.replaceChildren(h('h4', null, 'Elenco'), h('p', { class: 'sub' }, error.message));
+    }
+  }
+
   // ---------- Início ----------
   window.addEventListener('hashchange', () => {
     const key = window.location.hash.slice(1);
@@ -1038,6 +1247,8 @@
   (async () => {
     updateAccessUI();
     await restoreAuth();
+    stripSkeleton();
+    loadStrip();
     const initial = window.location.hash.slice(1);
     selectTab(TABS[initial] ? initial : 'teams');
   })();

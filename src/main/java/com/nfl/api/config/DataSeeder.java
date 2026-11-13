@@ -66,8 +66,7 @@ public class DataSeeder implements CommandLineRunner {
         Team dal = team("Dallas Cowboys", "Dallas", "DAL", Conference.NFC, Division.EAST, 1960, 5, att);
         Team buf = team("Buffalo Bills", "Buffalo", "BUF", Conference.AFC, Division.EAST, 1960, 0, highmark);
 
-        player("Patrick", "Mahomes", 15, Position.QB, "1995-09-17", 188, 102, "Texas Tech", kc);
-        player("Travis", "Kelce", 87, Position.TE, "1989-10-05", 196, 113, "Cincinnati", kc);
+        chiefsRoster(kc);
         player("Jalen", "Hurts", 1, Position.QB, "1998-08-07", 185, 101, "Oklahoma", phi);
         player("Saquon", "Barkley", 26, Position.RB, "1997-02-09", 183, 106, "Penn State", phi);
         player("Brock", "Purdy", 13, Position.QB, "1999-12-27", 185, 99, "Iowa State", sf);
@@ -121,6 +120,75 @@ public class DataSeeder implements CommandLineRunner {
         t.setStadium(stadium);
         stadium.setTeam(t);
         return teams.save(t);
+    }
+
+    /**
+     * Elenco ativo do Kansas City Chiefs: 54 jogadores (o long snapper fica de fora, pois a API não tem essa posição).
+     * Fonte: página pública de elenco da ESPN, em novembro de 2026. É um retrato daquele dia e muda com a temporada.
+     * Colunas: camisa, nome, sobrenome, posição, nascimento, altura (cm), peso (kg), universidade.
+     */
+    private static final String[][] CHIEFS_ROSTER = {
+            {"1", "Xavier", "Worthy", "WR", "2003-04-27", "180", "75", "Texas"},
+            {"2", "Josh", "Downs", "WR", "2001-08-12", "175", "78", "North Carolina"},
+            {"4", "Rashee", "Rice", "WR", "2000-04-22", "185", "93", "SMU"},
+            {"5", "Mansoor", "Delane", "CB", "2003-12-15", "183", "86", "LSU"},
+            {"6", "Justin", "Fields", "QB", "1999-03-05", "191", "103", "Ohio State"},
+            {"7", "Harrison", "Butker", "K", "1995-07-14", "193", "93", "Georgia Tech"},
+            {"8", "Kristian", "Fulton", "CB", "1998-09-03", "180", "89", "LSU"},
+            {"9", "Kenneth", "Walker III", "RB", "2000-10-20", "175", "96", "Michigan State"},
+            {"10", "Emmett", "Johnson", "RB", "2003-10-10", "180", "91", "Nebraska"},
+            {"11", "Jalen", "Royals", "WR", "2003-02-18", "183", "88", "Utah State"},
+            {"12", "Jared", "Wiley", "TE", "2000-11-02", "198", "113", "TCU"},
+            {"13", "Cyrus", "Allen", "WR", "2003-02-11", "180", "82", "Cincinnati"},
+            {"14", "Matt", "Araiza", "P", "2000-05-16", "185", "91", "San Diego State"},
+            {"15", "Patrick", "Mahomes", "QB", "1995-09-17", "188", "102", "Texas Tech"},
+            {"17", "Alohi", "Gilman", "S", "1997-09-17", "178", "91", "Notre Dame"},
+            {"19", "Garrett", "Nussmeier", "QB", "2002-02-06", "185", "93", "LSU"},
+            {"20", "Nohl", "Williams", "CB", "2002-09-23", "185", "91", "California"},
+            {"21", "Jaden", "Hicks", "S", "2002-08-16", "185", "98", "Washington State"},
+            {"22", "Jadon", "Canady", "CB", "2003-05-01", "180", "84", "Oregon"},
+            {"23", "Drue", "Tranquill", "LB", "1995-08-15", "188", "106", "Notre Dame"},
+            {"27", "Chamarri", "Conner", "S", "2000-07-11", "183", "92", "Virginia Tech"},
+            {"29", "Xavier", "Nwankpa", "S", "2003-12-08", "188", "97", "Iowa"},
+            {"30", "Chris", "Roland-Wallace", "CB", "2001-11-23", "180", "92", "USC"},
+            {"31", "Jeffrey", "Bassa", "LB", "2002-09-20", "188", "107", "Oregon"},
+            {"32", "Nick", "Bolton", "LB", "2000-03-10", "180", "108", "Missouri"},
+            {"34", "Jaydn", "Ott", "RB", "2002-12-16", "180", "94", "Oklahoma"},
+            {"39", "Melvin", "Smith Jr.", "CB", "2002-04-12", "185", "84", "Southern Arkansas"},
+            {"43", "Jack", "Cochrane", "LB", "1999-02-09", "191", "107", "South Dakota"},
+            {"44", "Cooper", "McDonald", "LB", "2001-08-07", "191", "109", "TCU"},
+            {"47", "Ben", "VanSumeren", "RB", "2000-05-05", "188", "113", "Michigan State"},
+            {"48", "Cole", "Christiansen", "LB", "1997-07-30", "185", "104", "Army"},
+            {"51", "R Mason", "Thomas", "DL", "2004-08-25", "188", "113", "Oklahoma"},
+            {"52", "Creed", "Humphrey", "OL", "1999-06-28", "193", "137", "Oklahoma"},
+            {"56", "George", "Karlaftis", "DL", "2001-04-03", "193", "119", "Purdue"},
+            {"61", "Diego", "Pounds", "OL", "2002-12-12", "198", "150", "Ole Miss"},
+            {"64", "Hunter", "Nourzad", "OL", "2000-11-26", "191", "144", "Penn State"},
+            {"65", "Trey", "Smith", "OL", "1999-06-16", "198", "146", "Tennessee"},
+            {"66", "Mike", "Caliendo", "OL", "1997-10-21", "193", "137", "Western Michigan"},
+            {"70", "Kahlil", "Benson", "OL", "2002-08-20", "198", "145", "Indiana"},
+            {"73", "Joshua", "Ezeudu", "OL", "1999-09-19", "193", "140", "North Carolina"},
+            {"76", "Kingsley", "Suamataia", "OL", "2003-01-18", "193", "148", "BYU"},
+            {"77", "Jaylon", "Moore", "OL", "1998-01-09", "193", "141", "Western Michigan"},
+            {"83", "Noah", "Gray", "TE", "1999-04-30", "191", "109", "Duke"},
+            {"84", "Justin", "Watson", "WR", "1996-04-04", "188", "98", "Pennsylvania"},
+            {"85", "Andrew", "Armstrong", "WR", "2000-10-31", "193", "95", "Arkansas"},
+            {"87", "Travis", "Kelce", "TE", "1989-10-05", "196", "113", "Cincinnati"},
+            {"88", "Jake", "Briningstool", "TE", "2002-12-09", "198", "109", "Clemson"},
+            {"91", "Felix", "Anudike-Uzomah", "DL", "2002-01-24", "193", "116", "Kansas State"},
+            {"92", "Khyiris", "Tonga", "DL", "1996-07-07", "188", "152", "BYU"},
+            {"94", "Bryson", "Eason", "DL", "2002-01-21", "191", "143", "Tennessee"},
+            {"95", "Chris", "Jones", "DL", "1994-07-03", "198", "141", "Mississippi State"},
+            {"96", "Marcus", "Harris", "DL", "2000-09-27", "191", "134", "Auburn"},
+            {"97", "Ashton", "Gillotte", "DL", "2002-10-30", "191", "122", "Louisville"},
+            {"99", "Peter", "Woods", "DL", "2005-03-05", "191", "141", "Clemson"},
+    };
+
+    private void chiefsRoster(Team kc) {
+        for (String[] r : CHIEFS_ROSTER) {
+            player(r[1], r[2], Integer.parseInt(r[0]), Position.valueOf(r[3]), r[4],
+                    Integer.parseInt(r[5]), Integer.parseInt(r[6]), r[7], kc);
+        }
     }
 
     private void player(String first, String last, int number, Position pos, String birth, int height,
